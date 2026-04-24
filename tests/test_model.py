@@ -1,5 +1,11 @@
-import numpy as np
-from app.model import ModelLoader
+import pytest
+from app.model import ModelLoader, get_model, reset_model
+
+@pytest.fixture(autouse=True)
+def clear_singleton():
+    reset_model()
+    yield
+    reset_model()
 
 def test_predict_returns_score_and_flag():
     loader = ModelLoader("app/model.joblib")
@@ -16,3 +22,8 @@ def test_normal_not_flagged():
     loader = ModelLoader("app/model.joblib")
     score, is_anomaly = loader.predict([0.1, 0.2, -0.1, 0.0])
     assert is_anomaly is False
+
+def test_get_model_singleton_identity():
+    m1 = get_model()
+    m2 = get_model()
+    assert m1 is m2
