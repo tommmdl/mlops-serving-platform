@@ -33,3 +33,11 @@ def test_metrics(client):
     response = client.get("/metrics")
     assert response.status_code == 200
     assert "predict_requests_total" in response.text
+
+
+def test_predict_anomaly(client):
+    response = client.post("/predict", json={"features": [10.0, -10.0, 10.0, -10.0]})
+    assert response.status_code == 200
+    body = response.json()
+    assert body["is_anomaly"] is True
+    assert isinstance(body["score"], float)

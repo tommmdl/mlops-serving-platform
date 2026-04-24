@@ -1,23 +1,23 @@
 from fastapi import FastAPI
 from fastapi.responses import PlainTextResponse
-from prometheus_client import Counter, generate_latest, CONTENT_TYPE_LATEST, REGISTRY
+from prometheus_client import Counter, generate_latest, CONTENT_TYPE_LATEST, CollectorRegistry
 from app.schemas import PredictRequest, PredictResponse
 from app.model import get_model
 
 app = FastAPI(title="MLOps Serving Platform", version="1.0.0")
 
+METRICS_REGISTRY = CollectorRegistry(auto_describe=True)
 
-def _get_or_create_counter(name: str, description: str) -> Counter:
-    """Get existing counter or create new one (avoids duplicate registration errors)."""
-    try:
-        return Counter(name, description)
-    except ValueError:
-        # Already registered — retrieve from registry
-        return REGISTRY._names_to_collectors.get(name) or REGISTRY._names_to_collectors.get(name + "_total")
-
-
-PREDICT_COUNTER = _get_or_create_counter("predict_requests_total", "Total prediction requests")
-ANOMALY_COUNTER = _get_or_create_counter("anomaly_detected_total", "Total anomalies detected")
+PREDICT_COUNTER = Counter(
+    "predict_requests_total",
+    "Total prediction requests",
+    registry=METRICS_REGISTRY,
+)
+ANOMALY_COUNTER = Counter(
+    "anomaly_detected_total",
+    "Total anomalies detected",
+    registry=METRICS_REGISTRY,
+)
 
 
 @app.get("/health")
@@ -37,4 +37,4 @@ def predict(request: PredictRequest):
 
 @app.get("/metrics", response_class=PlainTextResponse)
 def metrics():
-    return PlainTextResponse(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+    return generate_latest(METRICS_REGISTRY).decode("utf-8")
