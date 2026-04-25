@@ -1,40 +1,20 @@
-name: CI/CD
+name: CD
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag to deploy"
+        required: false
+        default: "latest"
 
 env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY: mlops-serving
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install dependencies
-        run: pip install -r app/requirements.txt
-
-      - name: Train model
-        run: python scripts/train_model.py
-
-      - name: Run tests
-        run: pytest tests/ -v
-
   build-and-push:
-    needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    continue-on-error: true
     outputs:
       image_tag: ${{ steps.meta.outputs.version }}
     steps:
@@ -67,8 +47,6 @@ jobs:
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
